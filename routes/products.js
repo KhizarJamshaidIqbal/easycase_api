@@ -5,7 +5,6 @@ const {
   searchProducts,
   updateProduct,
   deleteProduct,
-  getProductCount
 } = require("../controllers/productController");
 const { authenticate } = require("../middleware/auth");
 

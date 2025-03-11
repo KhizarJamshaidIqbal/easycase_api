@@ -4,6 +4,10 @@ const { createError } = require('../utils/error');
 
 exports.getConversations = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(403).json(createError('User not authenticated'));
+    }
+
     const conversations = await Conversation.find({
       participants: req.user.id,
       isActive: true
@@ -21,6 +25,10 @@ exports.getConversations = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(403).json(createError('User not authenticated'));
+    }
+
     const { conversationId } = req.params;
     const conversation = await Conversation.findById(conversationId);
 
@@ -45,6 +53,10 @@ exports.getMessages = async (req, res) => {
 
 exports.sendMessage = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(403).json(createError('User not authenticated'));
+    }
+
     const { conversationId } = req.params;
     const { content } = req.body;
 
@@ -83,6 +95,10 @@ exports.sendMessage = async (req, res) => {
 
 exports.markAsRead = async (req, res) => {
   try {
+    if (!req.user) {
+      return res.status(403).json(createError('User not authenticated'));
+    }
+
     const { conversationId } = req.params;
 
     await Message.updateMany(

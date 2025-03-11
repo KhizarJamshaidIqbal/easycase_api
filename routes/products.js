@@ -5,7 +5,6 @@ const {
   searchProducts,
   updateProduct,
   deleteProduct,
-  getProductCount
 } = require("../controllers/productController");
 const { authenticate } = require("../middleware/auth");
 
@@ -16,5 +15,4 @@ router.get("/", authenticate, getProducts);
 router.get("/search", authenticate, searchProducts);
 router.put("/:id", authenticate, updateProduct);
 router.delete("/:id", authenticate, deleteProduct);
-router.get("/count", authenticate, getProductCount);
 module.exports = router;

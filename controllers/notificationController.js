@@ -2,6 +2,10 @@ const Notification = require('../models/Notification');
 const { createError } = require('../utils/error');
 
 exports.getNotifications = async (req, res) => {
+  if (!req.user) {
+    return res.status(403).json(createError('User not authenticated'));
+  }
+
   try {
     const notifications = await Notification.find({ user: req.user.id })
       .sort('-createdAt')
@@ -14,6 +18,10 @@ exports.getNotifications = async (req, res) => {
 };
 
 exports.markAsRead = async (req, res) => {
+  if (!req.user) {
+    return res.status(403).json(createError('User not authenticated'));
+  }
+
   try {
     const notification = await Notification.findOneAndUpdate(
       { _id: req.params.id, user: req.user.id },
@@ -32,6 +40,10 @@ exports.markAsRead = async (req, res) => {
 };
 
 exports.markAllAsRead = async (req, res) => {
+  if (!req.user) {
+    return res.status(403).json(createError('User not authenticated'));
+  }
+
   try {
     await Notification.updateMany(
       { user: req.user.id, isRead: false },
@@ -45,6 +57,10 @@ exports.markAllAsRead = async (req, res) => {
 };
 
 exports.deleteNotification = async (req, res) => {
+  if (!req.user) {
+    return res.status(403).json(createError('User not authenticated'));
+  }
+
   try {
     const notification = await Notification.findOneAndDelete({
       _id: req.params.id,

@@ -11,6 +11,7 @@ const { authenticate } = require("../middleware/auth");
 const router = express.Router();
 // Protected routes for products
 router.post("/", authenticate, createProduct);
+//next
 router.get("/", authenticate, getProducts);
 router.get("/search", authenticate, searchProducts);
 router.put("/:id", authenticate, updateProduct);

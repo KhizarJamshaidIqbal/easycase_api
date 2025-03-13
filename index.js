@@ -5,6 +5,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const apiRoutes = require('./routes/api');
 const adminRoutes = require('./routes/adminRoutes'); 
+const sellerRoutes = require('./routes/seller');
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // API Routes
 app.use('/api', apiRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/seller', sellerRoutes);
 
 // For debugging - print all registered routes
 console.log('All routes:');

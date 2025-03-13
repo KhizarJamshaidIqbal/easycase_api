@@ -123,17 +123,31 @@ exports.login = async (req, res) => {
     user.refreshToken = refreshToken;
     await user.save();
 
+    // Log user data to debug
+    console.log("User data from DB:", user);
+
+    // Create user object with all required fields, using empty strings as fallbacks
+    const userResponse = {
+      id: user._id,
+      email: user.email || "",
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      title: user.title || "",
+      countryCode: user.countryCode || "",
+      phone: user.phone || "",
+      role: user.role || "buyer"
+    };
+
+    // Log the response object
+    console.log("Sending user response:", userResponse);
+
     res.json({
       accessToken,
       refreshToken,
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role
-      }
+      user: userResponse
     });
   } catch (error) {
+    console.error("Login error:", error);
     res.status(500).json(createError('Error logging in'));
   }
 };

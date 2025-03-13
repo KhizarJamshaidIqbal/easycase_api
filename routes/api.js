@@ -13,15 +13,16 @@ const router = express.Router();
 
 // Public routes
 router.use('/auth', authRoutes);
+router.use('/categories', categoryRoutes);
+router.use('/media', mediaRoutes);
+router.use('/products', productRoutes);
 
 // Protected routes
 router.use('/orders', authenticate, orderRoutes);
 router.use('/messages', authenticate, messageRoutes);
 router.use('/users', authenticate, userRoutes);
-router.use('/categories', categoryRoutes);
-router.use('/media', mediaRoutes);
-router.use('/products', authenticate, productRoutes);
-router.use('/wishlist', authenticate, wishlistRoutes);
+router.use('/wishlist', wishlistRoutes);
+
 // Add a test endpoint
 router.get('/test', (req, res) => {
   res.json({ message: 'API routes are working' });

@@ -5,7 +5,7 @@ exports.createProduct = async (req, res) => {
   try {
     
     // Use a default seller ID if not authenticated
-    const sellerId = req.user?.id || '64f8a9b25d42a8a8d0f7e3c7'; // Replace with a default seller ID
+    const sellerId = req.user?.id || '64f8a9b25d42a8a8d0f7e3c7'; // Replace with a default ID
 
     // Fetch auto-approval setting
     const setting = await Setting.findOne();
@@ -98,18 +98,37 @@ exports.createProduct = async (req, res) => {
     res.status(500).json({ message: "Server error creating product", error: error.message });
   }
 };
-// Get all products for Seller 
+// Get all products
 exports.getProducts = async (req, res) => {
   try {
-      const products = await Product.find()
-          .populate('category seller')
-          .select('title description price images'); // Select specific fields including images
+    let query = {};
+    
+    // For unauthenticated users or non-admin users, only show approved products
+    if (!req.user || (req.user && req.user.role !== 'admin')) {
+      query.status = 'approved';
+    }
+    
+    // For sellers, show their own products (regardless of status) plus approved products
+    if (req.user && req.user.role === 'seller') {
+      query = {
+        $or: [
+          { seller: req.user._id }, // Their own products
+          { status: 'approved' }    // Approved products
+        ]
+      };
+    }
+    
+    const products = await Product.find(query)
+      .populate('category seller')
+      .select('title description price images status compatibility oemNumber');
 
-      res.status(200).json(products);
+    res.status(200).json(products);
   } catch (error) {
-      res.status(500).json({ message: error.message });
+    console.error("Product retrieval error:", error);
+    res.status(500).json({ message: error.message });
   }
 };
+
 
 // Get all products for admin (includes status information)
 exports.adminGetAllProducts = async (req, res) => {
@@ -244,6 +263,126 @@ exports.getAutoApprovalStatus = async (req, res) => {
   } catch (error) {
     console.error('Error fetching auto-approve status:', error);
     res.status(500).json({ message: 'Error fetching auto-approve status', error: error.message });
+  }
+};
+
+// Get all products publicly (no auth required, only approved products)
+// exports.getPublicProducts = async (req, res) => {
+//   try {
+//     const products = await Product.find({ status: 'approved' })
+//       .populate('category')
+//       .select('title description price images compatibility oemNumber'); // Only necessary public fields
+
+//     res.status(200).json(products);
+//   } catch (error) {
+//     console.error("Public product retrieval error:", error);
+//     res.status(500).json({ message: "Error retrieving products", error: error.message });
+//   }
+// };
+
+// Get a single product by ID
+exports.getProductById = async (req, res) => {
+  try {
+    console.log(`Fetching product with ID: ${req.params.id}`);
+
+    // ✅ Fetch product and populate seller and category
+    const product = await Product.findById(req.params.id)
+      .populate("category seller")
+      .select("title description price images oemNumber compatibility status seller");
+
+    // ✅ If product not found
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // ✅ Ensure `seller` is defined before accessing its properties
+    if (!product.seller) {
+      return res.status(500).json({ message: "Seller information is missing for this product" });
+    }
+
+    // Only check authentication if the product is not approved
+    if (product.status !== "approved") {
+      // For unapproved products, check if user is authenticated and has appropriate role
+      if (!req.user) {
+        return res.status(403).json({ message: "Unauthorized. Product is not publicly available." });
+      }
+
+      // Allow sellers to view their own unapproved products
+      if (req.user.role === "seller" && product.seller?._id?.toString() === req.user._id?.toString()) {
+        return res.status(200).json(product);
+      }
+
+      // Admins can view all products
+      if (req.user.role === "admin") {
+        return res.status(200).json(product);
+      }
+
+      // If none of the above conditions are met, deny access
+      return res.status(403).json({ message: "Unauthorized. Product not available." });
+    }
+
+    // For approved products, allow access to everyone
+    res.status(200).json(product);
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ message: "Error retrieving product", error: error.message });
+  }
+};
+
+// Get product count own Seller Side
+exports.getProductCount = async (req, res) => {
+  try {
+    // Count only approved products by default
+    const query = { status: 'approved' };
+    
+    // If user is authenticated and has admin role, count all products
+    if (req.user && req.user.role === 'admin') {
+      // Count all products regardless of status
+      const total = await Product.countDocuments();
+      const approved = await Product.countDocuments({ status: 'approved' });
+      const pending = await Product.countDocuments({ status: 'pending' });
+      const rejected = await Product.countDocuments({ status: 'rejected' });
+      
+      return res.status(200).json({
+        total,
+        approved,
+        pending,
+        rejected
+      });
+    }
+    
+    // For everyone else, just return the count of approved products
+    const count = await Product.countDocuments(query);
+    res.status(200).json({ count });
+  } catch (error) {
+    console.error("Error counting products:", error);
+    res.status(500).json({ message: "Error counting products", error: error.message });
+  }
+};
+
+// Get total product count for admin
+exports.getTotalProductCountAdmin = async (req, res) => {
+  try {
+    // Ensure only admins can access this route
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ message: "Unauthorized. Admin access required." });
+    }
+
+    // Count all products based on status
+    const total = await Product.countDocuments();
+    const approved = await Product.countDocuments({ status: 'approved' });
+    const pending = await Product.countDocuments({ status: 'pending' });
+    const rejected = await Product.countDocuments({ status: 'rejected' });
+
+    res.status(200).json({
+      total,
+      approved,
+      pending,
+      rejected
+    });
+  } catch (error) {
+    console.error("Error counting products:", error);
+    res.status(500).json({ message: "Error counting products", error: error.message });
   }
 };
 
